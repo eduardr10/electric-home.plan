@@ -1,0 +1,145 @@
+# VITALS.md — Camino vital del proyecto `electric`
+
+Última actualización: **2026-05-25** (sesión actual)
+
+> Registro vivo del estado del proyecto. Actualizado después de cada sesión de trabajo que produzca cambios. Consultar junto con `agents.md` al inicio de cada sesión.
+
+---
+
+## Identidad del Proyecto
+
+- **Nombre:** Electric — ElectroPlan Web
+- **Propósito:** Aplicación web para diseñar planos eléctricos residenciales simples por módulos (estancias), con fusión en plano maestro y salida vectorial de alta calidad.
+- **Stack:** TypeScript 5.x + Vite 5.x + Canvas 2D API (sin framework UI)
+- **Target:** Navegadores modernos (Chrome, Firefox, Edge, Safari). Sin polyfills.
+
+---
+
+## Estado Global del Desarrollo
+
+| Subsistema | Estado | Archivos clave |
+|------------|--------|----------------|
+| `core/` — Tipos, Store, Validación | Completado | `types.ts`, `store.ts`, `validator.ts`, `profiles.ts` |
+| `renderer/` — Motor gráfico Canvas | Completado | `background.ts`, `foreground.ts`, `symbols.ts`, `labels.ts`, `interaction.ts` |
+| `modules/` — Gestión modular | Parcial | CRUD de módulos en `store.ts` y `module-list.ts`. Snap-engine pendiente. |
+| `ui/` — Paneles DOM | Completado | `toolbar.ts`, `inspector.ts`, `module-list.ts`, `profile-manager.ts` |
+| `export/` — Salida vectorial | Completado | `svg-export.ts` con leyenda dinámica + metraje. Impresión por `@media print`. |
+| Infraestructura (Vite, TS, tests) | Completado | `package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`, `style.css` |
+
+---
+
+## Hitos Planificados (Roadmap)
+
+1. **Fase 0 — Infraestructura:** Inicializar proyecto Vite + TypeScript + ESLint + Vitest.
+2. **Fase 1 — Core:** Tipos canónicos, Store (`Map`), perfiles de cable, validador de cortocircuitos.
+3. **Fase 2 — Renderer:** Doble Canvas (background + foreground), grid, símbolos eléctricos.
+4. **Fase 3 — UI:** Paneles (toolbar, inspector, module-list, legend).
+5. **Fase 4 — Módulos:** CRUD de módulos, import/export JSON.
+6. **Fase 5 — Snap Engine:** Fusión por anclaje magnético.
+7. **Fase 6 — Export:** SVG, impresión, leyenda dinámica.
+
+---
+
+## Bitácora de Decisiones
+
+| Fecha | Decisión | Justificación |
+|-------|----------|---------------|
+| 2026-05-22 | Stack: TypeScript + Vite + Canvas nativo, sin framework | El 80% de la complejidad es renderizado Canvas imperativo. Un framework DOM añade abstracción sin resolver el problema central. El plan exige APIs estándar del navegador y mínimo de dependencias. |
+| 2026-05-22 | Arquitectura: flujo unidireccional (UI → EventBus → Store → Renderer) | El Store nunca contiene estilos visuales. El Renderer solo lee. Separación limpia para agentes IA. |
+| 2026-05-22 | Archivos de guía: `agents.md` como referencia canónica, `VITALS.md` como registro vivo | Facilita la continuidad entre sesiones de agentes IA. Cada agente sabe qué se decidió, qué está hecho y qué falta. |
+| 2026-05-22 | Añadido `.gitignore` para proteger dependencias y artefactos locales del repositorio | Evitar comprometer `node_modules/`, `dist/` y archivos de editor en el control de versiones. |
+| 2026-05-23 | Reconstrucción completa de UI/UX con diseño elegante, snap a grid, zoom focalizado, selector de perfil al conectar, panel de errores de validación | El usuario solicitó culminar el proyecto con funcionalidades completas y UI de alta calidad. Se reconstruyeron símbolos, etiquetas con subíndices, export SVG con leyenda+metraje, e impresión vectorial. |
+| 2026-05-23 | Reconstrucción de interacción y renderizado según diagrama manual del usuario: selección visual con halos, modo connect con origen/destino, números de cable persistentes wₓ | El usuario mostró dibujos manuales donde Jb₁, Tc₁, Sw₁, b₁ son cajas etiquetadas; los cables tienen números fijos w₁, w₂…; y la selección debe ser visualmente obvia. Se implementaron halos azules (selección) y naranjas (origen de conexión), wireLabel persistente en Connection, y snap a grid. |
+| 2026-05-23 | Rehacer modelo de datos: Connection ahora contiene múltiples `conductors` (cables). Auto-numeración secuencial de componentes. Selector de perfiles con checkboxes. Edición inline de labels. | El usuario solicitó que un tubo tolere varios cables, y que la edición de nombres sea más simple. |
+| 2026-05-23 | Conexiones con `via` (waypoints): un cable puede pasar a través de nodos intermedios (Jb, Tc, Sw, b) antes de llegar al destino. Múltiples waypoints en modo Connect (clic en nodos intermedios, Enter para finalizar, Backspace para quitar). Edición de conexiones existentes desde el Inspector. | El usuario mostró en su dibujo que los cables atraviesan cajetines de paso y enchufes como puntos intermedios. Cada módulo tiene IDs de nodo únicos. |
+| 2026-05-23 | Refactorización completa del modelo de cables: `Conductor` ahora es entidad global del módulo con `wireLabel` persistente. `Connection` referencia `conductorIds`. Un mismo cable (w₁) puede atravesar múltiples tramos vía waypoints. Selector de cables muestra existentes (reutilizar) y nuevos (crear). Validación de labels únicos por módulo. | El usuario pidió que un mismo cable físico (w₁) pueda pasar a través de varios cajetines sin cambiar de número. Solo se crea un nuevo conductor cuando se especifica explícitamente. |
+| 2026-05-24 | Implementado `ProfileManager` UI completo en sidebar para CRUD de perfiles de cable (color, label, grosor, función). Selector de cables reorganizado en dos secciones: "Extend cables arriving at origin" (pre-marcados, fondo verde) y "Other existing cables". Etiquetas de cable (`drawLabel`) mejoradas con fondo blanco opaco, borde sutil, texto bold. Toolbar sticky confirmado. Panel de errores oculto. | El usuario pidió: (1) CRUD de perfiles de cable, (2) facilitar extensión de cables existentes desde el origen, (3) mejorar visibilidad de etiquetas de cable, (4) ocultar panel de errores, (5) toolbar fijo. |
+| 2026-05-24 | **Toolbar movida al top-bar**: herramientas horizontales fijas en la parte superior, nunca se desplazan. Logo a la izquierda, herramientas al centro, acciones a la derecha. | El usuario reportó que la sidebar se sobrecargaba y las herramientas se desplazaban al seleccionar elementos. Toolbar horizontal en top-bar resuelve ambos problemas. |
+| 2026-05-24 | **Perfiles de cable rediseñados**: sistema de combinaciones basado en grosor + color + función. `#12 AWG`: rojo/blanco, fase/neutro. `#14 AWG`: amarillo/rojo, fase/neutro/retorno. Tierra verde separada. `ProfileManager` ahora muestra una grilla compacta por grosor (chips de color), sin scroll excesivo. | El usuario especificó combinaciones exactas de cables por grosor y color. El sistema anterior no reflejaba la realidad eléctrica. |
+| 2026-05-24 | **Cables con borde oscuro**: cada cable se dibuja primero con un stroke sutil `rgba(15,23,42,0.2)` y luego con su color real. Esto hace visible el blanco y amarillo sobre el fondo gris del canvas. | El usuario reportó que el color blanco no se veía en el canvas. El outline universal resuelve el contraste para cualquier color claro. |
+| 2026-05-24 | **Nuevo componente `panel`**: tablero principal eléctrico. Símbolo rectangular con líneas de breaker y círculos. Numeración global `P₁`, `P₂`… Añadido a toolbar y auto-numeración. | El usuario pidió un elemento de "arranque" del cableado, esencial en planos eléctricos residenciales. |
+| 2026-05-24 | **Índices globales entre módulos**: `getNextNodeLabel` e `isLabelUniqueGlobally` buscan en todos los módulos. Si `Jb₁` existe en cualquier módulo, el siguiente será `Jb₂` globalmente. | El usuario solicitó consistencia de numeración incluso entre módulos, para evitar duplicados cuando se fusionen en plano maestro. |
+| 2026-05-24 | **Modo Master Plan básico**: nueva herramienta `master` en toolbar. Cambia el canvas a vista de plano maestro donde cada módulo se renderiza como un rectángulo con nombre. Snap anchors visibles como puntos de colores. Los módulos son arrastrables. Evento `store:moduleUpdated` emite cambios de posición. | El usuario preguntó cómo conectar módulos entre sí. El modo master plan es el primer paso: permite posicionar módulos en el plano general y ver sus puntos de anclaje (snap anchors). La conexión física entre módulos aún no está implementada. |
+| 2026-05-24 | **Autosave en localStorage**: cada operación mutante (`addNode`, `addConnection`, `createModule`, etc.) llama `autosave()` que persiste `toJSON()` en `localStorage.setItem('electric_project')`. Al iniciar la app, `tryLoadFromStorage()` restaura el estado automáticamente. | El usuario pidió persistencia de progreso sin base de datos. localStorage es la solución nativa del navegador. |
+| 2026-05-24 | **Conexiones inter-módulos con coherencia de cables**: nuevo tipo `ModuleLink` (fromModuleId, toModuleId, conductorIds). En modo Master, clic en módulo A lo selecciona como origen (halo naranja), clic en módulo B abre selector de cables de A para compartir con B. Los conductores seleccionados se clonan al módulo destino con el mismo ID, garantizando coherencia de `wireLabel` y perfil. Las conexiones se dibujan en master plan como líneas punteadas con puntos de color por cable compartido. | El usuario preguntó si el sistema entiende que puede ir desde 1 o varios componentes entre módulos manteniendo coherencia. ModuleLink con clonación de conductores resuelve esto: un mismo cable w₁ puede atravesar múltiples módulos. |
+| 2026-05-24 | **Botón New Project**: en el action-bar, permite borrar `localStorage` y recargar la página para empezar desde cero. Pide confirmación previa. | El usuario pidió poder borrar el progreso explícitamente cuando lo desee. |
+| 2026-05-24 | **Perfiles por defecto editables**: cada chip del `ProfileManager` ahora tiene un botón de edit (visible al hover). Permite cambiar color, label, grosor y función de cualquier perfil, incluyendo los generados por las combinaciones por defecto. | El usuario pidió poder editar los colores y nombres de los cables por defecto. |
+| 2026-05-24 | **Espaciado dinámico entre cables paralelos**: `spacing` ya no es fijo (4px), ahora es `Math.max(8, count * 1.5)`. A más cables en un tubo, más separación. | El usuario reportó que con muchas conexiones el plano se vuelve difícil de seguir. |
+| 2026-05-24 | **Múltiples cables del mismo perfil en un tubo**: confirmado y explícito. El cable selector muestra cada conductor individualmente por su `wireLabel` único (w₁, w₂…). El usuario puede marcar varios cables con el mismo color/función en una misma conexión. | El usuario especificó que por un tubo pueden pasar varios cables del mismo color y propósito. El modelo ya lo soportaba; el UI lo refuerza mostrando cada conductor por su identidad única. |
+| 2026-05-24 | **Cable selector con contadores (+/-)**: la sección "Create new cables" ahora usa controles de cantidad (botones + / −) en lugar de checkboxes simples. El usuario puede añadir N cables del mismo perfil en una sola conexión (ej: 2 rojos #12 fase). | El usuario reportó que no podía seleccionar más de 1 cable del mismo perfil porque el checkbox solo permitía 0/1. |
+| 2026-05-24 | **Offset paralelo consistente entre waypoints**: el cálculo del perpendicular ya no se hace por segmento (lo cual causaba que los cables se cruzaran en cada waypoint). Ahora se calcula una sola vez por conexión usando el segmento más largo, y ese mismo vector perpendicular se aplica a TODOS los puntos del path. Los cables paralelos ahora permanecen verdaderamente paralelos a través de waypoints y esquinas. | El usuario mostró una captura donde los cables se cruzaban visualmente en los waypoints, haciendo el plano ilegible. |
+| 2026-05-24 | **Labels en el segmento más largo**: las etiquetas de cable (w₁, w₂…) ahora se colocan exclusivamente sobre el segmento recto más largo de la conexión, distribuidas uniformemente. Esto evita que las etiquetas queden amontonadas en esquinas o waypoints. | El usuario reportó que los nombres de los cables no se veían bien y se superponían. |
+| 2026-05-25 | **Revertido: offset per-segmento → vuelta a offset global**: se intentó un offset per-segmento para solucionar condensación en ciertos segmentos ortogonales, pero produjo esquinas visuales descuidadas y desordenadas. Se revirtió al offset global consistente (misma normal aplicada a todo el path). Las esquinas vuelven a ser limpias y paralelas. Hit-test threshold restaurado a `12/scale`. | El usuario reportó que las esquinas se veían "muy mal" y que prefería volver a la línea de trabajo anterior prolija. |
+| 2026-05-24 | **Enrutamiento ortogonal (Manhattan routing) con evasión de obstáculos**: las conexiones ahora siempre se dibujan con segmentos horizontales y verticales, nunca diagonales. El algoritmo inserta automáticamente puntos de inflexión (esquinas) y, si un segmento cruza un nodo, calcula un desvío ortogonal alrededor del obstáculo (bypass por arriba/abajo o izquierda/derecha). Nuevo motor `src/renderer/path-engine.ts`. | El usuario pidió que las conexiones fueran siempre H/V para mayor organización y para evitar chocar con objetos interpuestos. |
+| 2026-05-24 | **Eliminación de tramos (waypoints) individuales**: al seleccionar una conexión, cada waypoint intermedio muestra un handle circular (blanco con borde azul, naranja si seleccionado). Clic en un handle selecciona ese tramo. Tecla `Delete` elimina SOLO ese waypoint de la conexión, sin borrar toda la conexión ni los nodos. Nuevo método `Store.removeWaypointFromConnection()`. | El usuario pidió poder eliminar tramos de cable sin perder toda la conexión. |
+| 2026-05-25 | **Legibilidad mejorada — símbolos y cables más grandes**: inspirado en planos eléctricos industriales de referencia. Cambios: (1) `BASE` de símbolos de 22 → 34 px (~55% más grandes), (2) grid snap de 20 → 40 px (doble espaciado), (3) separación entre cables paralelos de `max(8, N×1.5)` → `max(14, N×3)` (más del doble), (4) grosor de cables de `max(1.2, w×0.8)` → `max(2.2, w×1.2)` (líneas más gruesas), (5) outline más pronunciado `rgba(15,23,42,0.35)` con `+3.5 px`, (6) halos de selección aumentados a radio 42 px. | El usuario adjuntó planos industriales de referencia y pidió que el sistema replicara la claridad visual: elementos grandes, cables bien separados, líneas gruesas, fáciles de leer incluso con mucha información. |
+| 2026-05-25 | **Fix: cables grises en canvas**: al limpiar código duplicado en `foreground.ts`, se eliminó accidentalmente la segunda pasada de dibujo (color real del cable), dejando solo el outline oscuro. Se restauró `beginPath(); drawCablePath(); stroke();` después del bloque de shadow. | El usuario reportó que todos los cables se veían grises después de la sesión anterior. |
+| 2026-05-25 | **Overhaul CSS premium completo**: reescritura total de `style.css` con sistema de variables CSS (`--color-*`, `--shadow-*`, `--radius-*`, `--transition-*`). Acabado de alta gama: antialiasing tipográfico, scrollbar personalizado en sidebar (5px, sutil), estados hover/focus refinados con `cubic-bezier`, sombras de profundidad por capas, indicador naranja en módulo activo, botones con micro-animaciones (`translateY`, `scale`). | El usuario pidió un acabado de "altísima gama" en paneles y herramientas, al nivel de un profesional sobrecalificado. |
+| 2026-05-25 | **Eliminación de scroll horizontal en sidebar**: `overflow-x: hidden` explícito en `.sidebar`. Todos los contenedores flex tienen `min-width: 0`. Textos largos en inspector (`pathRow`, `conn-item`) ahora truncan con `ellipsis`. Chips de perfil con `text-overflow: ellipsis`. Grid de perfiles `repeat(2, 1fr)` verificado para no desbordar en 232px de ancho útil. | El usuario reportó scroll horizontal inaceptable en el panel izquierdo. |
+| 2026-05-25 | **Tamaño variable de símbolos (v1)**: cada tipo de componente tiene un multiplicador de escala proporcional a su importancia. `junction_box` 1.5x, `panel` 1.4x, `outlet`/`lamp` 1.0x, `switch` 0.7x. | El usuario pidió que los elementos fueran de tamaño variable para facilitar el empalme de cables. |
+| 2026-05-25 | **Tamaño dinámico uniforme por conexiones (v2)**: eliminados los multiplicadores por tipo. Todos los símbolos usan la misma base (`BASE = 26`). El tamaño visual crece dinámicamente según el número de conexiones del nodo: `scale = 1 + min(2.5, connCount × 0.18)`. Un nodo con 0 conexiones = 26px; con 5 conexiones = ~49px; con 10 conexiones = ~73px; con 14+ conexiones = 91px (cap). `getNodeScale(connCount)` exportado desde `symbols.ts`. `drawSymbol`, `getSymbolHalfSize`, halos e hit-testing usan la escala dinámica. El routing (obstacle avoidance) sigue usando el tamaño base para estabilidad. | El usuario reportó que el multiplicador por tipo no era suficiente y pidió que todos los elementos crecieran en función de cuántos cables les llegan, para facilitar el empalme. |
+| 2026-05-25 | **Cables más delgados con sombra funcional**: grosor reducido de `max(2.2, w×1.2)` a `max(1.6, w)`. Cada cable ahora tiene tres capas de render: (1) glow funcional sutil (`rgba(239,68,68,0.15)` para fase, `rgba(59,130,246,0.15)` para neutro, `rgba(34,197,94,0.15)` para tierra, `rgba(234,179,8,0.15)` para retorno), (2) outline oscuro base `rgba(15,23,42,0.30)`, (3) cable real delgado. Esto diferencia visualmente las funciones sin alterar los colores reales del perfil. | El usuario pidió cables más delgados que se diferencien por sombra o algo sutil según función (fase/neutro). |
+| 2026-05-25 | **Hit-testing de nodos: bounding box en lugar de círculo**: `findNodeAt` ahora usa el bounding box real del símbolo (`pos.x >= cx - hw - pad && pos.x <= cx + hw + pad && pos.y >= cy - hh - pad && pos.y <= cy + hh + pad`) en lugar de distancia euclidiana al centro. El padding es 6px. Esto cubre todo el área del símbolo (rectangular o circular) y elimina los clicks fallidos cuando el mouse está cerca del borde del nodo. | El usuario reportó que seleccionar un elemento requería "mil clicks" y era super complejo. |
+| 2026-05-25 | **Multiplicador de tamaño ×2**: `getNodeScale` cambió de `connCount × 0.18` a `connCount × 0.36`. Cap aumentado de 2.5 a 3.5. Los nodos crecen el doble de rápido según conexiones: 5 conexiones = ~65px (antes ~49px), 7 conexiones = ~78px, 10 conexiones = ~96px, 14+ = 117px (cap). | El usuario pidió que el factor de crecimiento fuera el doble. |
+| 2026-05-25 | **Offset per-segmento con esquinas limpias (polígono paralelo ortogonal)**: reemplazado el offset global (misma normal para todo el path) por un offset per-segmento donde cada punto del path se desplaza según la suma vectorial de las normales de los segmentos adyacentes. Para puntos extremos se usa la normal del segmento único. Para esquinas de 90° la suma de normales perpendiculares produce el punto de esquina correcto del polígono paralelo, manteniendo el path ortogonal. Para segmentos colineales (`dot > 0.99`) se usa una sola normal. Las esquinas se redondean con `lineJoin='round'`. Los cables horizontales y verticales ahora se separan visualmente en TODOS los segmentos. Nuevo método `computeOffsetPath` en `ForegroundRenderer`. Hit-test de conexiones usa threshold dinámico `(maxOffset + 14) / scale`. | El usuario reportó que "los cables horizontales se colapsan" y que "deben poder verse", aceptando que en las esquinas se buscará una solación para que se vean bien pero que la colapsación es inaceptable. |
+| 2026-05-25 | **Cache de paths por par origen-destino**: `getConnectionPath` ahora usa un `Map<string, Point[]>` con clave `${from}|${to}|${viaKey}`. Esto garantiza que conexiones que comparten el mismo origen y destino (ignorando cables) usen exactamente el mismo path ortogonal. La cache se limpia en cada `invalidate()`. | El usuario reportó que "dos cables que van desde A -> B toman diferentes rutas y no deberían". |
+| 2026-05-25 | **Offset diagonal fijo para separación en todos los segmentos**: eliminado `computeOffsetPath`. En su lugar se usa un offset global en dirección diagonal fija `(0.707, 0.707)`. Esto desplaza todos los cables consistentemente en diagonal, creando separación visible tanto en segmentos horizontales como verticales. Las esquinas mantienen forma similar con pequeños desplazamientos diagonales. | El usuario reportó que el offset per-segmento producía esquinas descuidadas y que cables horizontales seguían colapsándose. El offset diagonal es consistente en todos los segmentos. |
+| 2026-05-25 | **Normalización de claves de conexión**: `normalizeConnectionKey` ordena endpoints alfabéticamente para que A→B y B→A usen la misma clave de cache. Esto asegura que conexiones bidireccionales compartan el mismo path ortogonal. | El usuario reportó duplicidad de caminos entre los mismos nodos. |
+| 2026-05-25 | **Agrupación de cables por par origen-destino**: `drawConnections` ahora agrupa todas las conexiones del mismo par normalizado antes de dibujar. Los cables de múltiples conexiones se renderizan juntos con offsets coordinados, evitando colapsación. Spacing base aumentado de 14px a 18px para mejor separación visual. | El usuario reportó que cables del mismo par origen-destino se superponían visualmente. |
+
+---
+
+## Convenciones Activas
+
+- **Idioma:** Código (nombres, tipos) en inglés. Documentación (`.md`) en español técnico.
+- **Nombres de archivo:** `kebab-case.ts`.
+- **Tipos:** `strict: true`, sin `any`, tipos literales para enumerados.
+- **Rendering:** `requestAnimationFrame` con dirty-flag. No redibujar fondo en cada frame.
+- **Estado:** `Map<string, T>` para acceso O(1). Serialización a JSON para persistencia.
+- **Eventos:** `subsystem:action` (ej: `module:added`, `renderer:redraw`).
+- **Comentarios:** Código sin comentarios internos, a petición del usuario.
+
+---
+
+## Métricas y Objetivos de Rendimiento
+
+| Métrica | Objetivo | Cómo se mide |
+|---------|----------|--------------|
+| FPS durante arrastre | ≥ 60 FPS | `requestAnimationFrame` frame timing |
+| Tiempo de redibujado de fondo | < 16 ms | `performance.now()` en background render |
+| Tiempo de acceso a nodo por ID | O(1) | `Map.get()` nativo |
+| Tamaño de bundle (producción) | < 50 KB gzip | `vite build` + análisis |
+| Carga inicial | < 500 ms | Lighthouse / Performance API |
+
+---
+
+## Notas para el Próximo Agente
+
+- **Fases 0–4 y 6 completadas.** La app es funcional y probada: se pueden crear módulos, añadir componentes eléctricos (Jb, Tc, Sw, b, P), conectarlos con waypoints y múltiples cables por tramo, arrastrar con snap a grid, hacer zoom focalizado al cursor y pan.
+- **Toolbar en top-bar:** Horizontal, fija, nunca se desplaza. Logo a la izquierda, tools al centro, botones de archivo a la derecha.
+- **Conductor global del módulo:** Un cable (w₁) es una entidad persistente del módulo que puede atravesar múltiples tramos (vía waypoints). Se reutiliza en conexiones sucesivas. Solo se crea un nuevo conductor cuando el usuario explícitamente lo solicita.
+- **Selección visual implementada:** Halos proporcionales al tamaño real del símbolo (`Math.max(hw,hh) + 10`). Halo azul alrededor del nodo seleccionado. Halo naranja punteado alrededor del nodo origen y waypoints en modo Connect. Cables seleccionados con glow y grosor aumentado. Delete/Backspace borra lo seleccionado. Escape cancela todo.
+- **Tamaño dinámico uniforme por conexiones:** Todos los símbolos usan la misma base (`BASE = 26px`). El tamaño visual crece dinámicamente según conexiones: `scale = 1 + min(2.5, connCount × 0.18)`. 0 conexiones = 26px, 5 conexiones = ~49px, 10 conexiones = ~73px, 14+ = 91px (cap). `getNodeScale(connCount)` en `symbols.ts`. `drawSymbol`, `getSymbolHalfSize`, halos e hit-testing usan la escala dinámica. El routing (obstacle avoidance) usa tamaño base para estabilidad.
+- **Auto-numeración global de componentes:** Al colocar un componente se asigna automáticamente un label secuencial único **global** (Jb₁, Tc₁, Sw₁, b₁, P₁, Jb₂…). Editable inline con doble clic. Si se intenta duplicar un label, se auto-corrige al siguiente disponible en cualquier módulo.
+- **Perfiles de cable por combinaciones editables:** `#12 AWG` (rojo/blanco → fase/neutro), `#14 AWG` (amarillo/rojo → fase/neutro/retorno), tierra verde. `ProfileManager` muestra grilla compacta por grosor. Cada perfil es editable inline (color, label, grosor, función).
+- **Cable selector mejorado:** Al conectar, se muestran primero los cables que ya llegan al nodo origen (pre-marcados, fondo verde) para facilitar la extensión de cables existentes. Luego "Other existing cables". Finalmente "Create new cables".
+- **Etiquetas de cable mejoradas:** `drawLabel` usa fondo blanco opaco con borde sutil, texto bold 13px, y padding generoso. Las etiquetas se colocan en el segmento recto más largo de cada conexión, evitando waypoints y esquinas.
+- **Cables con outline oscuro:** Cada cable se dibuja primero con `rgba(15,23,42,0.25)` y luego con su color real. Visibilidad garantizada incluso para blanco y amarillo.
+- **Hit-testing de nodos con bounding box:** `findNodeAt` usa el bounding box real del símbolo (`cx ± hw ± 6px`, `cy ± hh ± 6px`), no distancia euclidiana al centro. Cubre todo el área del símbolo y elimina clicks fallidos en bordes.
+- **Offset diagonal fijo:** Todos los cables de una conexión se desplazan en la misma dirección diagonal `(0.707, 0.707)`. Esto crea separación visible en horizontales y verticales. Esquinas mantienen forma similar con pequeños desplazamientos diagonales. `lineJoin='round'` suaviza transiciones.
+- **Cables delgados con sombra funcional:** Grosor `max(1.6px, profile.width)`. Tres capas de render: (1) glow funcional sutil por tipo (`rgba(239,68,68,0.15)` fase, `rgba(59,130,246,0.15)` neutro, `rgba(34,197,94,0.15)` tierra, `rgba(234,179,8,0.15)` retorno), (2) outline oscuro base `rgba(15,23,42,0.30)`, (3) cable real.
+- **Cache de paths por par origen-destino:** `getConnectionPath` cachea el path ortogonal usando claves normalizadas (`normalizeConnectionKey` ordena endpoints alfabéticamente). Conexiones A→B y B→A usan exactamente el mismo path. La cache se limpia en cada `invalidate()`.
+- **Agrupación de cables por par origen-destino:** `drawConnections` agrupa todas las conexiones del mismo par normalizado antes de dibujar. Los cables de múltiples conexiones se renderizan juntos con offsets coordinados usando spacing base de 18px (antes 14px). Esto evita colapsación visual cuando hay varias conexiones entre los mismos nodos.
+- **Enrutamiento ortogonal (Manhattan routing):** Las conexiones se dibujan exclusivamente con segmentos horizontales y verticales. Motor en `src/renderer/path-engine.ts`. El algoritmo inserta esquinas automáticamente y desvía alrededor de nodos si un segmento colisiona.
+- **Eliminación de tramos individuales:** Al seleccionar una conexión, cada waypoint intermedio muestra un handle clickeable. `Delete` elimina solo ese tramo de la conexión, sin afectar el resto.
+- **Panel de errores oculto:** El `error-panel` y su listener en `main.ts` están comentados. El validador sigue corriendo pero no muestra UI.
+- **Autosave localStorage:** Todo el proyecto se persiste automáticamente en `localStorage` con clave `electric_project`. No hay pérdida de datos al recargar. Botón "New Project" limpia el storage y recarga.
+- **Modo Master Plan funcional:** Herramienta `master` en toolbar. Muestra módulos como rectángulos arrastrables. Doble clic (realmente: clic sin drag) en un módulo lo selecciona como origen (halo naranja). Clic en otro módulo abre selector de cables del origen para compartir con el destino. Las conexiones inter-módulos se dibujan como líneas punteadas con puntos de color por cable.
+- **Conexiones inter-módulos coherentes:** `ModuleLink` conecta dos módulos compartiendo conductores específicos. Los conductores se clonan al módulo destino con el mismo ID, manteniendo `wireLabel` y perfil. Un cable `w₁` puede atravesar múltiples módulos.
+- **Fase 5 (Snap Engine) parcial:** SnapAnchor existe en tipos y se renderiza en master plan, pero aún no hay fusión automática por proximidad.
+- **CSS premium activo:** Todo el diseño visual está gobernado por variables CSS en `:root` (`--color-*`, `--shadow-*`, `--radius-*`, `--transition-*`). Cualquier cambio de estilo debe usar las variables, no valores hardcodeados. El sidebar tiene `overflow-x: hidden` estricto y scrollbar custom de 5px. Nunca introducir `min-width` fijo en elementos del sidebar sin verificar que no cause scroll horizontal.
+- **Posibles mejoras futuras:**
+  - Dibujo de contorno/paredes de la estancia (polygons).
+  - Conexiones inter-módulos reales vía snap anchors.
+  - Soporte táctil completo.
+- Bundle actual: **74.27 KB** (18.52 KB gzip). CSS: 15.98 KB (3.01 KB gzip). Objetivo <50 KB gzip sigue cumpliéndose ampliamente.

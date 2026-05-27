@@ -1,6 +1,6 @@
 # VITALS.md — Camino vital del proyecto `electric`
 
-Última actualización: **2026-05-25** (sesión actual)
+Última actualización: **2026-05-26** (sesión actual)
 
 > Registro vivo del estado del proyecto. Actualizado después de cada sesión de trabajo que produzca cambios. Consultar junto con `agents.md` al inicio de cada sesión.
 
@@ -86,6 +86,7 @@
 | 2026-05-25 | **Offset diagonal fijo para separación en todos los segmentos**: eliminado `computeOffsetPath`. En su lugar se usa un offset global en dirección diagonal fija `(0.707, 0.707)`. Esto desplaza todos los cables consistentemente en diagonal, creando separación visible tanto en segmentos horizontales como verticales. Las esquinas mantienen forma similar con pequeños desplazamientos diagonales. | El usuario reportó que el offset per-segmento producía esquinas descuidadas y que cables horizontales seguían colapsándose. El offset diagonal es consistente en todos los segmentos. |
 | 2026-05-25 | **Normalización de claves de conexión**: `normalizeConnectionKey` ordena endpoints alfabéticamente para que A→B y B→A usen la misma clave de cache. Esto asegura que conexiones bidireccionales compartan el mismo path ortogonal. | El usuario reportó duplicidad de caminos entre los mismos nodos. |
 | 2026-05-25 | **Agrupación de cables por par origen-destino**: `drawConnections` ahora agrupa todas las conexiones del mismo par normalizado antes de dibujar. Los cables de múltiples conexiones se renderizan juntos con offsets coordinados, evitando colapsación. Spacing base aumentado de 14px a 18px para mejor separación visual. | El usuario reportó que cables del mismo par origen-destino se superponían visualmente. |
+| 2026-05-25 | **Configuración para GitHub Pages**: `vite.config.ts` ahora incluye `base: './'`, haciendo que todos los assets (JS, CSS) usen rutas relativas (`./assets/...` en lugar de `/assets/...`). Esto permite que el proyecto se sirva desde cualquier subdirectorio (GitHub Pages project page, dominio personalizado, o incluso abriendo `index.html` directamente desde el sistema de archivos) sin modificar rutas. El funcionamiento local (`npm run dev`) no se ve afectado. | El usuario preguntó si el proyecto podía funcionar en GitHub Pages sin romper el funcionamiento actual. |
 
 ---
 
@@ -138,6 +139,7 @@
 - **Conexiones inter-módulos coherentes:** `ModuleLink` conecta dos módulos compartiendo conductores específicos. Los conductores se clonan al módulo destino con el mismo ID, manteniendo `wireLabel` y perfil. Un cable `w₁` puede atravesar múltiples módulos.
 - **Fase 5 (Snap Engine) parcial:** SnapAnchor existe en tipos y se renderiza en master plan, pero aún no hay fusión automática por proximidad.
 - **CSS premium activo:** Todo el diseño visual está gobernado por variables CSS en `:root` (`--color-*`, `--shadow-*`, `--radius-*`, `--transition-*`). Cualquier cambio de estilo debe usar las variables, no valores hardcodeados. El sidebar tiene `overflow-x: hidden` estricto y scrollbar custom de 5px. Nunca introducir `min-width` fijo en elementos del sidebar sin verificar que no cause scroll horizontal.
+- **Compatibilidad con GitHub Pages:** `vite.config.ts` usa `base: './'`, generando assets con rutas relativas. Para deploy: correr `npm run build` y subir el contenido de `dist/` a la rama `gh-pages` (o configurar GitHub Actions para auto-deploy). Funciona tanto en GitHub Pages project pages (`/repo-name/`) como en dominios personalizados.
 - **Posibles mejoras futuras:**
   - Dibujo de contorno/paredes de la estancia (polygons).
   - Conexiones inter-módulos reales vía snap anchors.
